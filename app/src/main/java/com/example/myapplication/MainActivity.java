@@ -4,27 +4,22 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.text.InputType;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     List<String> courseList = new ArrayList<>();
     ArrayAdapter adapter;
     List<AssignmentSql> allTags; //list of course
+    double overallAvg=0,count=0;
+    TextView textView ;
 
 
     @Override
@@ -45,6 +42,8 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         db = new DatabaseHelper(context);
+        textView=findViewById(R.id.textView1);
+
 
         // Creating tags
 //        AssignmentSql tag1 = new AssignmentSql("Shopping");
@@ -52,10 +51,17 @@ public class MainActivity extends AppCompatActivity {
 //        long tag1_id = db.createTag(tag1);
         allTags = db.getAllTags();
         courseList.clear();
+        overallAvg=0;
+        count=0;
         for (AssignmentSql tag : allTags) {
 //            Log.d("Tag Name", tag.getAssignmentName());
-            courseList.add(tag.getAssignmentName());
+            courseList.add(tag.getAssignmentName() + "\nAverage assignment: " + AssignmentAverage(tag));
+            if(AssignmentAverage(tag)!=0) {
+                count++;
+                overallAvg += AssignmentAverage(tag);
+            }
         }
+        textView.setText("Average of all Assignment: "+(overallAvg/count));
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -75,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("listener", o.toString());
                 try {
 //                    deleteDialog(o.toString());
-                    AssignmentViewer(o.toString().split("\n\n")[0] + "\t\t" + o.toString().split("\n\n")[1]);
+                    AssignmentViewer(o.toString().split("\n")[0] + "\t\t" + o.toString().split("\n")[1]);
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -107,16 +113,21 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
 //                courseList.add(input.getText().toString()+"\n\n"+input1.getText().toString());
-                AssignmentSql tag1 = new AssignmentSql(input.getText().toString() + " \n\n" + input1.getText().toString());
+                AssignmentSql tag1 = new AssignmentSql(input.getText().toString() + "\n" + input1.getText().toString());
                 // Inserting tags in db
                 long tag1_id = db.createTag(tag1);
                 tag1.setId(tag1_id);
                 courseList.clear();
+                overallAvg=0;
+                count=0;
                 for (AssignmentSql tag : allTags) {
 //            Log.d("Tag Name", tag.getAssignmentName());
-                    courseList.add(tag.getAssignmentName());
+                    courseList.add(tag.getAssignmentName() + "\nAverage assignment: " + AssignmentAverage(tag));
+                    if(AssignmentAverage(tag)!=0) {
+                        count++;
+                        overallAvg += AssignmentAverage(tag);
+                    }
                 }
-                adapter.notifyDataSetChanged();
             }
         });
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -131,34 +142,13 @@ public class MainActivity extends AppCompatActivity {
                 adapter.notifyDataSetChanged();
                 listView = findViewById(R.id.listView1);
                 listView.setAdapter(adapter);
-                Toast.makeText(context, "Updated", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, "Updated", Toast.LENGTH_SHORT).show();
             }
         });
 
         builder.show();
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
 
     public void AssignmentViewer(String title) {
         Intent intent = new Intent(this, AssignmentActivity.class);
@@ -166,11 +156,38 @@ public class MainActivity extends AppCompatActivity {
 
         startActivity(intent);
     }
+
     @Override
     public void onResume() {
         super.onResume();
+        courseList.clear();
+        overallAvg=0;
+        count=0;
+        for (AssignmentSql tag : allTags) {
+//            Log.d("Tag Name", tag.getAssignmentName());
+            courseList.add(tag.getAssignmentName() + "\nAverage assignment: " + AssignmentAverage(tag));
+            if(AssignmentAverage(tag)!=0) {
+                count++;
+                overallAvg += AssignmentAverage(tag);
+            }
+        }
+        textView.setText("Average of all Assignment: "+(overallAvg/count));
         adapter.notifyDataSetChanged();
+        listView = findViewById(R.id.listView1);
+        listView.setAdapter(adapter);
     }
 
+    public double AssignmentAverage(AssignmentSql tag) {
+        double avg = 0;
+        List<CoursesSql> tagsWatchList = db.getAllToDosByTag(tag.getAssignmentName());
+        if (tagsWatchList.size() != 0) {
+            for (CoursesSql todo : tagsWatchList) {
+                avg += Integer.parseInt(todo.getCourseName().split("\n")[1].split("%")[0]);
+            }
+            avg /= tagsWatchList.size();
+        }
+
+        return avg;
+    }
 
 }

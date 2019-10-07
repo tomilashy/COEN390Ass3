@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -76,19 +77,19 @@ public class AssignmentActivity extends AppCompatActivity {
         adapter = new ArrayAdapter<String>(this, R.layout.listview, courseList);
         listView = findViewById(R.id.listView2);
         //clicklistner
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Object o = listView.getItemAtPosition(position);
-                Log.d("listener",o.toString());
-                try {
-//                    deleteDialog(o.toString());
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+//        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                Object o = listView.getItemAtPosition(position);
+//                Log.d("listener",o.toString());
+//                try {
+////                    deleteDialog(o.toString());
+//
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        });
         listView.setAdapter(adapter);
 
         FloatingActionButton fab = findViewById(R.id.fab);
@@ -115,11 +116,21 @@ public class AssignmentActivity extends AppCompatActivity {
                 //Write your logic here
                 this.finish();
                 return true;
+            case   R.id.action_delete:
+                db.deleteTag(tag, true);
+                Mainmenu();
+                return true;
+
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    public void Mainmenu() {
+        Intent intent = new Intent(this, MainActivity.class);
+
+        startActivity(intent);
+    }
     private void addAssignmentDialog(final View view) {
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
